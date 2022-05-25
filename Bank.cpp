@@ -57,6 +57,7 @@ public:
     }
     Result change_limit(double limit) 
     {
+        if (limit <= 0) return Err;
         m_limit = limit;
         return Ok;
     }
@@ -70,47 +71,68 @@ public:
     {
         m_bank_accounts = {};
     }
-    Result create_account(int id, std::string password) 
+    Result create_account(int id, std::string password)
     {
         if (does_account_exists(id)) return Err;
         BankAccount newBankAccount(id, password);
         m_bank_accounts.emplace(id, newBankAccount);
         return Ok;
     }
-    Result login(int id, std::string password) 
+    Result login(int id, std::string password)
     {
         if (!does_account_exists(id)) return Err;
         BankAccount& account = m_bank_accounts.find(id)->second;
         if (!account.check_credentials(id, password)) return Err;
         return Ok;
     }
-    Result withdraw(int id, double amount) 
+    Result withdraw(int id, double amount)
     {
         if (!does_account_exists(id)) return Err;
         BankAccount& account = m_bank_accounts.find(id)->second;
         return account.withdraw(amount);
-        
+
     }
-    Result deposit(int id, double amount) 
+    Result deposit(int id, double amount)
     {
         if (!does_account_exists(id)) return Err;
         BankAccount& account = m_bank_accounts.find(id)->second;
         account.deposit(amount);
         return Ok;
     }
-    double balance_inquiry(int id) 
+    double balance_inquiry(int id)
     {
         //check if the user exists in the caller
         BankAccount& account = m_bank_accounts.find(id)->second;
         return account.balance_inquiry();
     }
-    bool does_account_exists(int id) 
+    bool does_account_exists(int id)
     {
         return does_map_key_exists(m_bank_accounts, id);
     }
     std::vector<double>& ins_and_outs(int id) {}
-    Result money_transfer(int from, int to, double amount) {}
-    Result change_password(int id, std::string new_password) {}
+    Result money_transfer(int from, int to, double amount) 
+    {
+        if (!does_account_exists(from) || !does_account_exists(to)) return Err;
+        BankAccount& from_account = m_bank_accounts.find(from)->second;
+        BankAccount& to_account = m_bank_accounts.find(to)->second;
+        if (from_account.balance_inquiry() < amount) return Err;
+        from_account.withdraw(amount);
+        to_account.deposit(amount);
+        return Ok;
+    }
+    Result change_password(int id, std::string new_password)
+    {
+        if (!does_account_exists(id)) return Err;
+        BankAccount& account = m_bank_accounts.find(id)->second;
+        account.change_password(new_password);
+        return Ok;
+    }
+    Result change_limit(int id, double new_limit)
+    {
+        if (!does_account_exists(id)) return Err;
+        BankAccount& account = m_bank_accounts.find(id)->second;
+        return account.change_limit(new_limit);
+    }
 };
 
 const std::string INDEX_PROMPT = 
@@ -124,7 +146,8 @@ const std::string LOGGED_IN_PROMPT =
 "4 => Change Password\n"
 "5 => Change Limit\n"
 "6 => Ins and Outs\n"
-"7 => Log out\n";
+"7 => Log out\n"
+"8 => Transfer Money\n";
 
 class Program
 {
@@ -161,6 +184,25 @@ public:
             break;
         }
     }
+    void change_password()
+    {
+        std::string new_password = input<std::string>("Enter your new password: ");
+        auto result = m_bank.change_password(m_current_account_id, new_password);
+        switch (result)
+        {
+        case Ok:
+            loggedin_page();
+            break;
+        case Err:
+            std::cout << "An Error Occured\n";
+            loggedin_page();
+            break;
+        default:
+            std::cout << "An Error Occured\n";
+            loggedin_page();
+            break;
+        }
+    }
     void loggedin_page() 
     {
         std::cout << LOGGED_IN_PROMPT;
@@ -181,13 +223,18 @@ public:
             balance_inquiry();
             break;
         case '4':
+            change_password();
             break;
         case '5':
+            change_limit();
             break;
         case '6':
             break;
         case '7':
             index_page();
+            break;
+        case '8':
+            transfer_money();
             break;
         default:
             std::cout << "Invalid Command!\n";
@@ -263,6 +310,46 @@ public:
             loggedin_page();
             break;
         default:
+            break;
+        }
+    }
+    void change_limit()
+    {
+        double amount = input<double>("Enter the new limit: ");
+        Result result = m_bank.change_limit(m_current_account_id, amount);
+        switch (result)
+        {
+        case Ok:
+            loggedin_page();
+            break;
+        case Err:
+            std::cout << "Can't change your limit!\n";
+            loggedin_page();
+            break;
+        default:
+            std::cout << "Can't change your limit!\n";
+            loggedin_page();
+            break;
+        }
+    }
+    void transfer_money()
+    {
+        int to_id = input<int>("Enter the id of the account to transfer money: ");
+        double amount = input<double>("Enter the amount of money to transfer: ");
+        Result result = m_bank.money_transfer(m_current_account_id, to_id, amount);
+        switch (result)
+        {
+        case Ok:
+            std::cout << "Transfer is successfull\n";
+            loggedin_page();
+            break;
+        case Err:
+            std::cout << "Transfer is not successfull\n";
+            loggedin_page();
+            break;
+        default:
+            std::cout << "Transfer is not successfull\n";
+            loggedin_page();
             break;
         }
     }
