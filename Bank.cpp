@@ -15,7 +15,7 @@ class BankAccount
     double m_balance;
     int m_id;
     std::string m_password;
-    std::vector<double> m_ins_and_outs;
+    std::vector<double> m_draws_and_deposits;
     double m_limit;
 public:
     BankAccount(int id, std::string password)
@@ -23,7 +23,7 @@ public:
         m_balance = 0;
         m_id = id;
         m_password = password;
-        m_ins_and_outs = {};
+        m_draws_and_deposits = {};
     }
     bool check_credentials(int id, std::string password) 
     {
@@ -33,19 +33,19 @@ public:
     {
         m_balance += quantity;
         m_limit = m_balance;
-        m_ins_and_outs.push_back(quantity);
+        m_draws_and_deposits.push_back(quantity);
     }
     Result withdraw(double quantity) 
     {
         if (quantity > m_limit) return Err;
         if (quantity > m_balance) return Err;
         m_balance -= quantity;
-        m_ins_and_outs.push_back(-quantity);
+        m_draws_and_deposits.push_back(-quantity);
         return Ok;
     }
-    std::vector<double>& ins_and_outs() 
+    std::vector<double>& draws_and_deposits() 
     {
-        return m_ins_and_outs;
+        return m_draws_and_deposits;
     }
     double balance_inquiry()
     {
@@ -109,7 +109,12 @@ public:
     {
         return does_map_key_exists(m_bank_accounts, id);
     }
-    std::vector<double>& ins_and_outs(int id) {}
+    std::vector<double>& draws_and_deposits(int id) 
+    {
+        //check if the user exists in the caller
+        BankAccount& account = m_bank_accounts.find(id)->second;
+        return account.draws_and_deposits();
+    }
     Result money_transfer(int from, int to, double amount) 
     {
         if (!does_account_exists(from) || !does_account_exists(to)) return Err;
@@ -146,8 +151,9 @@ const std::string LOGGED_IN_PROMPT =
 "4 => Change Password\n"
 "5 => Change Limit\n"
 "6 => Ins and Outs\n"
-"7 => Log out\n"
-"8 => Transfer Money\n";
+"7 => Transfer Money\n"
+"8 => View the List of Draws and Deposits\n"
+"9 => Log out\n";
 
 class Program
 {
@@ -231,10 +237,13 @@ public:
         case '6':
             break;
         case '7':
-            index_page();
+            transfer_money();
             break;
         case '8':
-            transfer_money();
+            draws_and_deposits();
+            break;
+        case '9':
+            index_page();
             break;
         default:
             std::cout << "Invalid Command!\n";
@@ -352,6 +361,16 @@ public:
             loggedin_page();
             break;
         }
+    }
+    void draws_and_deposits()
+    {
+        std::vector<double>& list = m_bank.draws_and_deposits(m_current_account_id);
+        std::cout << "\tListing Draws and Deposits:\n";
+        for (auto& k : list)
+        {
+            std::cout << "\t\t--> " << k << "\n";
+        }
+        loggedin_page();
     }
 };
 
