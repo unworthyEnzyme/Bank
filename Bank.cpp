@@ -32,13 +32,14 @@ public:
     void deposit(double quantity) 
     {
         m_balance += quantity;
+        m_limit = m_balance;
         m_ins_and_outs.push_back(quantity);
     }
     Result withdraw(double quantity) 
     {
         if (quantity > m_limit) return Err;
         if (quantity > m_balance) return Err;
-        m_balance += quantity;
+        m_balance -= quantity;
         m_ins_and_outs.push_back(-quantity);
         return Ok;
     }
@@ -79,28 +80,28 @@ public:
     Result login(int id, std::string password) 
     {
         if (!does_account_exists(id)) return Err;
-        BankAccount account = m_bank_accounts.find(id)->second;
+        BankAccount& account = m_bank_accounts.find(id)->second;
         if (!account.check_credentials(id, password)) return Err;
         return Ok;
     }
     Result withdraw(int id, double amount) 
     {
         if (!does_account_exists(id)) return Err;
-        BankAccount account = m_bank_accounts.find(id)->second;
+        BankAccount& account = m_bank_accounts.find(id)->second;
         return account.withdraw(amount);
         
     }
     Result deposit(int id, double amount) 
     {
         if (!does_account_exists(id)) return Err;
-        BankAccount account = m_bank_accounts.find(id)->second;
+        BankAccount& account = m_bank_accounts.find(id)->second;
         account.deposit(amount);
         return Ok;
     }
     double balance_inquiry(int id) 
     {
         //check if the user exists in the caller
-        BankAccount account = m_bank_accounts.find(id)->second;
+        BankAccount& account = m_bank_accounts.find(id)->second;
         return account.balance_inquiry();
     }
     bool does_account_exists(int id) 
@@ -171,6 +172,7 @@ public:
         switch (command[0])
         {
         case '1':
+            withdraw();
             break;
         case '2':
             deposit();
@@ -246,6 +248,23 @@ public:
     {
         std::cout << m_bank.balance_inquiry(m_current_account_id) << "\n";
         loggedin_page();
+    }
+    void withdraw()
+    {
+        double amount = input<double>("Enter an amount: ");
+        Result result = m_bank.withdraw(m_current_account_id, amount);
+        switch (result)
+        {
+        case Ok:
+            loggedin_page();
+            break;
+        case Err:
+            std::cout << "You can withdraw that much\n";
+            loggedin_page();
+            break;
+        default:
+            break;
+        }
     }
 };
 
