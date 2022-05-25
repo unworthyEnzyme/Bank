@@ -10,6 +10,7 @@ enum Result
     Err,
 };
 
+
 class BankAccount
 {
     double m_balance;
@@ -17,6 +18,7 @@ class BankAccount
     std::string m_password;
     std::vector<double> m_draws_and_deposits;
     double m_limit;
+    double m_gold;
 public:
     BankAccount(int id, std::string password)
     {
@@ -24,6 +26,27 @@ public:
         m_id = id;
         m_password = password;
         m_draws_and_deposits = {};
+        m_gold = 0;
+    }
+    double get_gold_amount()
+    {
+        return m_gold;
+    }
+    Result buy_gold(double amount, int exchange_rate)
+    {
+        if (amount * exchange_rate > m_balance) return Err;
+        m_balance -= amount * exchange_rate;
+        m_gold += amount;
+        m_draws_and_deposits.push_back(-amount * exchange_rate);
+        return Ok;
+    }
+    Result sell_gold(double amount, int exchange_rate)
+    {
+        if (amount > m_gold) return Err;
+        m_gold -= amount;
+        m_balance += amount * exchange_rate;
+        m_draws_and_deposits.push_back(amount * exchange_rate);
+        return Ok;
     }
     bool check_credentials(int id, std::string password) 
     {
@@ -70,6 +93,26 @@ public:
     Bank()
     {
         m_bank_accounts = {};
+    }
+    double get_gold_amount(int id)
+    {
+        //check if the user exists in the caller
+        BankAccount& account = m_bank_accounts.find(id)->second;
+        return account.get_gold_amount();
+    }
+    Result buy_gold(int id, double amount, int exc_rate)
+    {
+        if (!does_account_exists(id)) return Err;
+        BankAccount& account = m_bank_accounts.find(id)->second;
+        Result result = account.buy_gold(amount, exc_rate);
+        return result;
+    }
+    Result sell_gold(int id, double amount, int exc_rate)
+    {
+        if (!does_account_exists(id)) return Err;
+        BankAccount& account = m_bank_accounts.find(id)->second;
+        Result result = account.sell_gold(amount, exc_rate);
+        return result;
     }
     Result create_account(int id, std::string password)
     {
@@ -145,23 +188,27 @@ const std::string INDEX_PROMPT =
 "2 => Create an Account\n"
 "3 => Quit the Applicaton\n";
 const std::string LOGGED_IN_PROMPT =
-"1 => Withdraw\n"
-"2 => Deposit\n"
-"3 => Balance Inquiry\n"
-"4 => Change Password\n"
-"5 => Change Limit\n"
-"6 => Ins and Outs\n"
-"7 => Transfer Money\n"
-"8 => View the List of Draws and Deposits\n"
-"9 => Log out\n";
+"a => Withdraw\n"
+"b => Deposit\n"
+"c => Balance Inquiry\n"
+"d => Change Password\n"
+"e => Change Limit\n"
+"f => Buy Gold\n"
+"g => Sell Gold\n"
+"h => View Gold Exchange Rate\n"
+"j => Transfer Money\n"
+"k => View the List of Draws and Deposits\n"
+"l => Log out\n";
 
 class Program
 {
     int m_current_account_id;
     Bank m_bank;
+    int m_gold_exc_rate;
 public:
     Program()
     {
+        m_gold_exc_rate = get_gold_exchange_rate();
         m_bank = Bank();
         m_current_account_id = NULL;
     }
@@ -213,36 +260,39 @@ public:
     {
         std::cout << LOGGED_IN_PROMPT;
         std::string command = input<std::string>(" > ");
-        if (command.length() > 1) {
-            std::cout << "Invalid Command!\n";
-            loggedin_page();
-        }
         switch (command[0])
         {
-        case '1':
+        case 'a':
             withdraw();
             break;
-        case '2':
+        case 'b':
             deposit();
             break;
-        case '3':
+        case 'c':
             balance_inquiry();
             break;
-        case '4':
+        case 'd':
             change_password();
             break;
-        case '5':
+        case 'e':
             change_limit();
             break;
-        case '6':
+        case 'f':
+            buy_gold();
             break;
-        case '7':
+        case 'g':
+            sell_gold();
+            break;
+        case 'h':
+            view_gold_exchange_rate();
+            break;
+        case 'j':
             transfer_money();
             break;
-        case '8':
+        case 'k':
             draws_and_deposits();
             break;
-        case '9':
+        case 'l':
             index_page();
             break;
         default:
@@ -370,6 +420,58 @@ public:
         {
             std::cout << "\t\t--> " << k << "\n";
         }
+        loggedin_page();
+    }
+    void buy_gold()
+    {
+        std::cout << "EXCHANGE RATE: " << m_gold_exc_rate << "\n";
+        std::cout << "You Currently Have: " << m_bank.get_gold_amount(m_current_account_id) << "g Gold\n";
+        double amount = input<double>("Enter the amount you want to buy: ");
+        Result result = m_bank.buy_gold(m_current_account_id, amount, m_gold_exc_rate);
+        switch (result)
+        {
+        case Ok:
+            std::cout << "Operation is successful\n";
+            std::cout << "You have left " << m_bank.balance_inquiry(m_current_account_id) << " of dollars\n";
+            m_gold_exc_rate = get_gold_exchange_rate();
+            loggedin_page();
+            break;
+        case Err:
+            std::cout << "There was an error\n";
+            m_gold_exc_rate = get_gold_exchange_rate();
+            loggedin_page();
+            break;
+        default:
+            break;
+        }
+    }
+
+    void sell_gold()
+    {
+        std::cout << "EXCHANGE RATE: " << m_gold_exc_rate << "\n";
+        std::cout << "You Currently Have: " << m_bank.get_gold_amount(m_current_account_id) << "g Gold\n";
+        double amount = input<double>("Enter the amount you want to sell: ");
+        Result result = m_bank.sell_gold(m_current_account_id, amount, m_gold_exc_rate);
+        switch (result)
+        {
+        case Ok:
+            std::cout << "Operation is successful\n";
+            std::cout << "You have " << m_bank.balance_inquiry(m_current_account_id) << " of dollars\n";
+            m_gold_exc_rate = get_gold_exchange_rate();
+            loggedin_page();
+            break;
+        case Err:
+            std::cout << "There was an error\n";
+            m_gold_exc_rate = get_gold_exchange_rate();
+            loggedin_page();
+            break;
+        default:
+            break;
+        }
+    }
+    void view_gold_exchange_rate()
+    {
+        std::cout << "EXCHANGE RATE: " << m_gold_exc_rate << "\n";
         loggedin_page();
     }
 };

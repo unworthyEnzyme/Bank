@@ -2,14 +2,7 @@
 #include <map>
 #include <string>
 #include <iostream>
-template <typename T>
-T input(std::string message);
-
-template <typename T>
-void println(T message);
-
-template<typename K, typename V>
-bool does_map_key_exists(std::map<K, V>& map, K key);
+#include <time.h>
 
 template <typename T>
 T input(std::string message)
@@ -35,4 +28,12 @@ bool does_map_key_exists(std::map<K, V>& map, K key)
 	else {
 		return true;
 	}
+}
+
+int get_gold_exchange_rate()
+{
+	srand((unsigned)time(NULL));
+	int lowest = 1, highest = 10;
+	int range = (highest - lowest) + 1;
+	return lowest + rand() % range;
 }
