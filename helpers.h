@@ -3,6 +3,14 @@
 #include <string>
 #include <iostream>
 #include <time.h>
+#include "windows.h"
+
+void redirect()
+{
+	std::cout << "Redirecting...\n";
+	Sleep(1000);
+	system("cls");
+}
 
 template <typename T>
 T input(std::string message)

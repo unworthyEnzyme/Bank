@@ -218,6 +218,7 @@ public:
         std::string command = input<std::string>(" > ");
         if (command.length() > 1) {
             std::cout << "Invalid command!\n";
+            redirect();
             index_page();
         }
         switch (command[0])
@@ -244,10 +245,12 @@ public:
         switch (result)
         {
         case Ok:
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "An Error Occured\n";
+            redirect();
             loggedin_page();
             break;
         default:
@@ -297,6 +300,7 @@ public:
             break;
         default:
             std::cout << "Invalid Command!\n";
+            redirect();
             loggedin_page();
             break;
         }
@@ -310,10 +314,12 @@ public:
         {
         case Ok:
             m_current_account_id = id;
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "Cannot create an account\n";
+            redirect();
             create_account();
             break;
         default:
@@ -331,10 +337,12 @@ public:
         case Ok:
             std::cout << "You are logged in\n";
             m_current_account_id = id;
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "Couldn't log in\n";
+            redirect();
             login();
             break;
         default:
@@ -348,11 +356,13 @@ public:
         double amount = input<double>("Enter an amount: ");
         //if someone can choose they have to logged in so i don't have check if the user exists
         m_bank.deposit(m_current_account_id, amount);
+        redirect();
         loggedin_page();
     }
     void balance_inquiry()
     {
         std::cout << m_bank.balance_inquiry(m_current_account_id) << "\n";
+        redirect();
         loggedin_page();
     }
     void withdraw()
@@ -379,14 +389,17 @@ public:
         switch (result)
         {
         case Ok:
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "Can't change your limit!\n";
+            redirect();
             loggedin_page();
             break;
         default:
             std::cout << "Can't change your limit!\n";
+            redirect();
             loggedin_page();
             break;
         }
@@ -400,14 +413,17 @@ public:
         {
         case Ok:
             std::cout << "Transfer is successfull\n";
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "Transfer is not successfull\n";
+            redirect();
             loggedin_page();
             break;
         default:
             std::cout << "Transfer is not successfull\n";
+            redirect();
             loggedin_page();
             break;
         }
@@ -420,6 +436,7 @@ public:
         {
             std::cout << "\t\t--> " << k << "\n";
         }
+        redirect();
         loggedin_page();
     }
     void buy_gold()
@@ -434,11 +451,13 @@ public:
             std::cout << "Operation is successful\n";
             std::cout << "You have left " << m_bank.balance_inquiry(m_current_account_id) << " of dollars\n";
             m_gold_exc_rate = get_gold_exchange_rate();
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "There was an error\n";
             m_gold_exc_rate = get_gold_exchange_rate();
+            redirect();
             loggedin_page();
             break;
         default:
@@ -458,11 +477,13 @@ public:
             std::cout << "Operation is successful\n";
             std::cout << "You have " << m_bank.balance_inquiry(m_current_account_id) << " of dollars\n";
             m_gold_exc_rate = get_gold_exchange_rate();
+            redirect();
             loggedin_page();
             break;
         case Err:
             std::cout << "There was an error\n";
             m_gold_exc_rate = get_gold_exchange_rate();
+            redirect();
             loggedin_page();
             break;
         default:
@@ -472,6 +493,7 @@ public:
     void view_gold_exchange_rate()
     {
         std::cout << "EXCHANGE RATE: " << m_gold_exc_rate << "\n";
+        redirect();
         loggedin_page();
     }
 };
